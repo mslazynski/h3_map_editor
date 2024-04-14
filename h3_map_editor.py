@@ -57,7 +57,8 @@ def main() -> None:
             case ["open", filename]: open_map(filename)
             case ["save"]:           save_map()
             case ["save", filename]: save_map(filename)
-
+            case ["serialize", filename]: scripts.seralize(map_data, filename)
+            case ["serialize"]: scripts.seralize(map_data)
             case ["print", key] | ["show", key]:
                 if key in map_data:
                     print(map_data[key])

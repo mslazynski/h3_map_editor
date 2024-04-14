@@ -1,14 +1,30 @@
 #!/usr/bin/env python3
 
+import json
 from random import choice, randint
 
 import data.creatures as cd # Creature details
 import data.objects   as od # Object details
 
+class BytesEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            return o.hex()
+        else:
+            return super().default(o)
+        
 def temp(obj_data: dict) -> dict:
     print("temp script")
     return obj_data
 
+def serialize_map(map_data: dict, path: str = "map.json") -> None:
+    """ Seralizes map into a json file. 
+        Useful to udnerstand the data structure.
+    """
+    print("\n---[ Serialize map ]---")
+    with open(path, 'w') as file:
+        json.dump(map_data, file, cls=BytesEncoder)
+        
 ###################
 ## COUNT OBJECTS ##
 ###################
