@@ -2,6 +2,7 @@
 
 import json
 from random import choice, randint
+import math 
 
 import data.creatures as cd # Creature details
 import data.objects   as od # Object details
