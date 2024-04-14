@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
-
+import os
 from enum import IntEnum
+from typing import Optional
+
+import random
+import src.file_io as io
+
+from gzip import open
+from data.objects import ID as ObjectID
+import src.handler_01_general as h1
+import src.handler_02_players_and_teams as h2
+import src.handler_03_conditions as h3
+import src.handler_04_heroes as h4
+import src.handler_05_additional_flags as h5
+import src.handler_06_rumors_and_events as h6
+import src.handler_07_terrain as h7
+import src.handler_08_objects as h8
 
 class ID(IntEnum):
     NONE = 65535 # 2 bytes max
@@ -452,3 +467,246 @@ AI_VALUE = [
      3879, # Dreadnought
      6433  # Juggernaut
 ]
+
+class CreatureLevel(IntEnum):
+    Level_1 = 1
+    Level_2 = 2,
+    Level_3 = 3,
+    Level_4 = 4,
+    Level_5 = 5,
+    Level_6 = 6,
+    Level_7 = 7
+
+    @staticmethod
+    def from_object_id(object_id: ObjectID) -> Optional['CreatureLevel']:
+        match object_id:
+            case ObjectID.Random_Monster_1:
+                return CreatureLevel.Level_1
+            case ObjectID.Random_Monster_2:
+                return CreatureLevel.Level_2
+            case ObjectID.Random_Monster_3:
+                return CreatureLevel.Level_3
+            case ObjectID.Random_Monster_4:
+                return CreatureLevel.Level_4
+            case ObjectID.Random_Monster_5:
+                return CreatureLevel.Level_5
+            case ObjectID.Random_Monster_6:
+                return CreatureLevel.Level_6
+            case ObjectID.Random_Monster_7:
+                return CreatureLevel.Level_7
+            case ObjectID.Random_Monster:
+                return random.choice(tuple(level for level in CreatureLevel))
+            case _:
+                return None
+            
+
+creatures_per_level: dict[CreatureLevel, tuple[ID, ...]] = {
+    CreatureLevel.Level_1: (
+        ID.Pikeman,
+        ID.Centaur,
+        ID.Gremlin,
+        ID.Imp,
+        ID.Skeleton,
+        ID.Troglodyte,
+        ID.Goblin,
+        ID.Gnoll,
+        ID.Pixie,
+        ID.Nymph,
+        ID.Halfling,
+        ID.Halberdier,
+        ID.Centaur_Captain,
+        ID.Master_Gremlin,
+        ID.Familiar,
+        ID.Skeleton_Warrior,
+        ID.Infernal_Troglodyte,
+        ID.Hobgoblin,
+        ID.Gnoll_Marauder,
+        ID.Sprite,
+        ID.Oceanid,
+        ID.Halfling_Grenadier,
+        ID.Peasant
+    ),
+    CreatureLevel.Level_2: (
+        ID.Archer,
+        ID.Dwarf,
+        ID.Stone_Gargoyle,
+        ID.Gog,
+        ID.Walking_Dead,
+        ID.Harpy,
+        ID.Wolf_Rider,
+        ID.Lizardman,
+        ID.Air_Elemental,
+        ID.Crew_Mate,
+        ID.Mechanic,
+        ID.Marksman,
+        ID.Battle_Dwarf,
+        ID.Obsidian_Gargoyle,
+        ID.Magog,
+        ID.Zombie,
+        ID.Harpy_Hag,
+        ID.Wolf_Raider,
+        ID.Lizard_Warrior,
+        ID.Storm_Elemental,
+        ID.Seaman,
+        ID.Engineer,
+        ID.Rogue,
+        ID.Boar,
+        ID.Leprechaun
+    ),
+    CreatureLevel.Level_3: (
+        ID.Griffin,
+        ID.Wood_Elf,
+        ID.Stone_Golem,
+        ID.Hell_Hound,
+        ID.Wight,
+        ID.Beholder,
+        ID.Orc,
+        ID.Serpent_Fly,
+        ID.Water_Elemental,
+        ID.Pirate,
+        ID.Armadillo,
+        ID.Royal_Griffin,
+        ID.Grand_Elf,
+        ID.Iron_Golem,
+        ID.Cerberus,
+        ID.Wraith,
+        ID.Evil_Eye,
+        ID.Orc_Chieftain,
+        ID.Dragon_Fly,
+        ID.Ice_Elemental,
+        ID.Corsair,
+        ID.Bellwether_Armadillo,
+        ID.Sea_Dog,
+        ID.Nomad,
+        ID.Mummy
+    ),
+    CreatureLevel.Level_4: (
+        ID.Swordsman,
+        ID.Pegasus,
+        ID.Mage,
+        ID.Demon,
+        ID.Vampire,
+        ID.Medusa,
+        ID.Ogre,
+        ID.Basilisk,
+        ID.Fire_Elemental,
+        ID.Stormbird,
+        ID.Automaton,
+        ID.Crusader,
+        ID.Silver_Pegasus,
+        ID.Arch_Mage,
+        ID.Horned_Demon,
+        ID.Vampire_Lord,
+        ID.Medusa_Queen,
+        ID.Ogre_Mage,
+        ID.Greater_Basilisk,
+        ID.Energy_Elemental,
+        ID.Ayssid,
+        ID.Sentinel_Automaton,
+        ID.Sharpshooter,
+        ID.Satyr,
+        ID.Steel_Golem
+    ),
+    CreatureLevel.Level_5: (
+        ID.Monk,
+        ID.Dendroid_Guard,
+        ID.Genie,
+        ID.Pit_Fiend,
+        ID.Lich,
+        ID.Minotaur,
+        ID.Roc,
+        ID.Gorgon,
+        ID.Earth_Elemental,
+        ID.Sea_Witch,
+        ID.Sandworm,
+        ID.Zealot,
+        ID.Dendroid_Soldier,
+        ID.Master_Genie,
+        ID.Pit_Lord,
+        ID.Power_Lich,
+        ID.Minotaur_King,
+        ID.Thunderbird,
+        ID.Mighty_Gorgon,
+        ID.Magma_Elemental,
+        ID.Sorceress,
+        ID.Olgoi_Khorkhoi,
+        ID.Troll,
+        ID.Gold_Golem,
+        ID.Fangarm
+    ),
+    CreatureLevel.Level_6: (
+        ID.Cavalier,
+        ID.Unicorn,
+        ID.Naga,
+        ID.Efreeti,
+        ID.Black_Knight,
+        ID.Manticore,
+        ID.Cyclops,
+        ID.Wyvern,
+        ID.Psychic_Elemental,
+        ID.Nix,
+        ID.Gunslinger,
+        ID.Champion,
+        ID.War_Unicorn,
+        ID.Naga_Queen,
+        ID.Efreet_Sultan,
+        ID.Dread_Knight,
+        ID.Scorpicore,
+        ID.Cyclops_King,
+        ID.Wyvern_Monarch,
+        ID.Magic_Elemental,
+        ID.Nix_Warrior,
+        ID.Bounty_Hunter,
+        ID.Diamond_Golem,
+        ID.Enchanter
+    ),
+    CreatureLevel.Level_7: (
+        ID.Angel,
+        ID.Green_Dragon,
+        ID.Giant,
+        ID.Devil,
+        ID.Bone_Dragon,
+        ID.Red_Dragon,
+        ID.Behemoth,
+        ID.Hydra,
+        ID.Firebird,
+        ID.Sea_Serpent,
+        ID.Couatl,
+        ID.Dreadnought,
+        ID.Archangel,
+        ID.Gold_Dragon,
+        ID.Titan,
+        ID.Arch_Devil,
+        ID.Ghost_Dragon,
+        ID.Black_Dragon,
+        ID.Ancient_Behemoth,
+        ID.Phoenix,
+        ID.Haspid,
+        ID.Crimson_Couatl,
+        ID.Juggernaut,
+        ID.Faerie_Dragon,
+        ID.Rust_Dragon,
+        ID.Crystal_Dragon,
+        ID.Azure_Dragon,
+    )
+}
+
+
+def creature_definitions() -> dict[ID, dict]:
+    with open(os.path.join(os.path.dirname(__file__), "creatures.h3m"), 'rb') as io.in_file:
+        general = h1.parse_general()
+        h2.parse_player_specs()
+        h3.parse_conditions()
+        h2.parse_teams()
+        h4.parse_starting_heroes(general)
+        h5.parse_flags()
+        h6.parse_rumors()
+        h4.parse_hero_data()
+        h7.parse_terrain(general)
+        object_defs = h8.parse_object_defs()
+
+        return {
+            object_def["subtype"]: object_def
+            for object_def in object_defs
+            if object_def["type"] == ObjectID.Monster
+        }
