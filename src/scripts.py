@@ -5,6 +5,7 @@ from random import choice, randint
 
 import data.creatures as cd # Creature details
 import data.objects   as od # Object details
+import data.replacements as rp
 
 class BytesEncoder(json.JSONEncoder):
     def default(self, o):
@@ -195,3 +196,68 @@ def generate_guards(obj_data: dict) -> dict:
 
     print("\n---[ Finished generating guards ]---")
     return obj_data
+
+
+def replace_creatures(obj_defs: list, obj_data: dict):
+    print("\n---[ Replacing creatures ]---")
+    def_per_creature = cd.creature_definitions()
+    creature_to_def: dict[cd.ID, int] = {}
+    for i, obj_def in enumerate(obj_defs):
+        if obj_def["type"] != od.ID.Monster:
+            continue
+        if obj_def["subtype"] not in cd.ID:
+            continue
+        creature_to_def[cd.ID(obj_def["subtype"])] = i
+
+    def replace_basic_list(creatures_list: list, context: rp.ReplacementContext):
+        for guard in creatures_list:
+            creature_id = guard["id"]
+            replacement = rp.random_replacement_for(creature_id, context)
+            if replacement is None:
+                continue
+
+            print(f"> replacing creature {cd.ID(creature_id).name}")
+            guard["id"] = replacement.id.value
+            print(f"\t- chosen {cd.ID(replacement.id).name}")
+            old_quantity = guard["amount"]
+            guard["amount"] = math.ceil(old_quantity * replacement.multiplier)
+            print(f"\t- changing quantity from {old_quantity} to {guard['amount']}")
+
+    for obj in obj_data:
+        match obj["type"]:
+            case od.ID.Monster:
+                creature_id = obj["subtype"]
+                replacement = rp.random_replacement_for(creature_id, rp.ReplacementContext.ENEMY)
+                if replacement is None:
+                    continue
+                print(f"> replacing {cd.ID(creature_id).name}")
+                obj["subtype"] = replacement.id.value
+                if replacement.id not in creature_to_def:
+                    obj_defs.append(def_per_creature[replacement.id])
+                    creature_to_def[replacement.id] = len(obj_defs) - 1
+
+                obj["def_id"] = creature_to_def[replacement.id]
+                print(f"\t- chosen {cd.ID(replacement.id).name}")
+                if "quantity" in obj:
+                    old_quantity = obj["quantity"]
+                    obj["quantity"] = math.ceil(old_quantity * replacement.multiplier)
+                    print(f"\t- changing quantity from {old_quantity} to {obj['quantity']}")
+            case random_monster if rp.CreatureLevel.from_object_id(random_monster) is not None:
+                level = rp.CreatureLevel.from_object_id(random_monster)
+                creature_id = choice(rp.allowed_creatures_per_level[level])
+                obj["type"] = od.ID.Monster.value
+                obj["subtype"] = creature_id.value
+                if creature_id not in creature_to_def:
+                    obj_defs.append(def_per_creature[creature_id])
+                    creature_to_def[creature_id] = len(obj_defs) - 1
+                obj["def_id"] = creature_to_def[creature_id]
+                print(f"> replacing random monster of {rp.CreatureLevel(level).name} with {cd.ID(creature_id).name}")
+            case _:
+                if "guards" in obj:
+                    replace_basic_list(obj["guards"], rp.ReplacementContext.ENEMY)
+                if "garrison_guards" in obj:
+                    replace_basic_list(obj["garrison_guards"], rp.ReplacementContext.FRIEND)
+                if "hero_data" in obj:
+                    replace_basic_list(obj["hero_data"]["creatures"], rp.ReplacementContext.FRIEND)
+                if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
+                    replace_basic_list(obj["contents"]["Creatures"], rp.ReplacementContext.FRIEND)
