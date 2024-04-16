@@ -14,6 +14,7 @@ import src.handler_05_additional_flags   as h5
 import src.handler_06_rumors_and_events  as h6
 import src.handler_07_terrain            as h7
 import src.handler_08_objects            as h8
+from data.towns import ID as TownID
 
 map_data = {
     "general"     : {}, # General tab in Map Specifications
@@ -67,7 +68,7 @@ def main() -> None:
                 map_data["object_data"] = scripts.replace_creatures(map_data["object_defs"], map_data["object_data"])
 
             case ["serialize"]:
-                scripts.serialize_objects(map_data)
+                scripts.serialize_map(map_data)
 
             case ["count"] | ["list"]:
                 scripts.count_objects(map_data["object_data"])
@@ -162,21 +163,43 @@ def save_map(filename: str = "output.h3m") -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        input_name = sys.argv[1]
-        happy_suffix = "_happy"
-        output_name = input_name + happy_suffix
-        if len(input_name) > 4:
-            if input_name[-4:] != h3m_extension:
+        try:
+            input_name = sys.argv[1]
+            happy_suffix = "_happy"
+            output_name = input_name + happy_suffix
+            if len(input_name) > 4:
+                if input_name[-4:] != h3m_extension:
+                    input_name += h3m_extension
+                    output_name += h3m_extension
+                else:
+                    output_name = input_name[:-4] + happy_suffix + h3m_extension
+            else:
                 input_name += h3m_extension
                 output_name += h3m_extension
-            else:
-                output_name = input_name[:-4] + happy_suffix + h3m_extension
-        else:
-            input_name += h3m_extension
-            output_name += h3m_extension
 
-        open_map(input_name)
-        scripts.replace_creatures(map_data["object_defs"], map_data["object_data"])
+            open_map(input_name)
+            scripts.replace_creatures(map_data["object_defs"], map_data["object_data"])
+            scripts.derandomize_towns(map_data["object_defs"], map_data["object_data"])
+
+            if scripts.is_there_town(map_data["object_data"], TownID.rampart):
+                print("\n--[ Oh No! There is a rampart town in this map! --]")
+                replacement = input("What should replace rampart towns?\n"
+                    "> possible replacements: castle tower inferno necropolis dungeon stronghold fortress conflux cove factory\n"
+                    "> write 'rampart' or just nothing if you don't want to replace it\n"
+                    "> write 'random' if you want every rampart town to be idenpendently replaced with a random town\n"
+                    "> confirm choice with `Enter`:\n"
+                    "> ").strip().lower()
+                
+                if len(replacement) == 0 or replacement == "rampart":
+                    print("- as you wish, rampart has been left untouched")
+                else:
+                    new_town = TownID[replacement] if replacement != "random" else TownID.NONE 
+                    scripts.replace_town(map_data["object_defs"], map_data["object_data"], TownID.rampart, new_town)
+        except Exception as e:
+            input(f"Odtulakowanie failed: {e}")
+            sys.exit(1)
+
         save_map(output_name)
+        input(f"This map is a happy place now :)")
     else:
-        print("Usage: python odtulakuj.py [file_name]")
+        main()
