@@ -2,11 +2,13 @@
 
 import json
 from random import choice, randint
-import math 
+import math
 
+import data.towns as td # towns definition
 import data.creatures as cd # Creature details
 import data.objects   as od # Object details
-import data.replacements as rp
+import data.creature_replacements as crp
+import data.town_replacements as trp
 
 class BytesEncoder(json.JSONEncoder):
     def default(self, o):
@@ -198,6 +200,66 @@ def generate_guards(obj_data: dict) -> dict:
     print("\n---[ Finished generating guards ]---")
     return obj_data
 
+def derandomize_towns(obj_defs: list, obj_data: dict):
+    print("\n---[ Derandomizing towns ]---")
+    def_per_town = td.towns_definitions()
+    town_to_def: dict[td.ID, int] = {}
+    for i, obj_def in enumerate(obj_defs):
+        if obj_def["type"] != od.ID.Town:
+            continue
+        if obj_def["subtype"] not in cd.ID:
+            continue
+        town_to_def[cd.ID(obj_def["subtype"])] = i
+
+    for obj in obj_data:
+        match obj["type"]:
+            case od.ID.Random_Town if obj["owner"] == 255:
+                new_town_id = choice(trp.allowed_towns)
+                obj["type"] = od.ID.Town.value
+                obj["subtype"] = new_town_id.value
+                if new_town_id not in town_to_def:
+                    obj_defs.append(def_per_town[new_town_id])
+                    town_to_def[new_town_id] = len(obj_defs) - 1
+                obj["def_id"] = town_to_def[new_town_id]
+                print(f"> replacing random town of with {td.ID(new_town_id).name}")
+                for sub_obj in obj_data:
+                    match sub_obj["type"]:
+                        case od.ID.Random_Dwelling | od.ID.Random_Dwelling_Faction | od.ID.Random_Dwelling_Leveled\
+                            if sub_obj["same_as_town"] == obj["start_bytes"]:
+                                sub_obj["same_as_town"] = (0).to_bytes(4, 'little')
+                                sub_obj["alignment"] = [0] * 16
+                                sub_obj["alignment"][new_town_id.value] = 1
+            case od.ID.Random_Dwelling | od.ID.Random_Dwelling_Faction | od.ID.Random_Dwelling_Leveled if "alignment" in obj:
+                obj["alignment"][1] = 0
+
+
+def is_there_town(obj_data: dict, town: td.ID):
+    for obj in obj_data:
+        match obj["type"], obj["subtype"]:
+            case od.ID.Town, town_id if town_id == town:
+                return True
+    return False
+
+def replace_town(obj_defs: list, obj_data: dict, old_town: td.ID, new_town: td.ID):
+    new_town = choice(trp.allowed_towns) if new_town == td.ID.NONE else new_town
+    def_per_town = td.towns_definitions()
+    town_to_def: dict[td.ID, int] = {}
+    for i, obj_def in enumerate(obj_defs):
+        if obj_def["type"] != od.ID.Town:
+            continue
+        if obj_def["subtype"] not in cd.ID:
+            continue
+        town_to_def[cd.ID(obj_def["subtype"])] = i
+
+    for obj in obj_data:
+        match obj["type"], obj["subtype"]:
+            case od.ID.Town, town_id if town_id == old_town:
+                obj["subtype"] = new_town.value
+                if new_town not in town_to_def:
+                    obj_defs.append(def_per_town[new_town])
+                    town_to_def[new_town] = len(obj_defs) - 1
+                obj["def_id"] = town_to_def[new_town]
+                print(f"> replacing rampart with {td.ID(new_town).name}")
 
 def replace_creatures(obj_defs: list, obj_data: dict):
     print("\n---[ Replacing creatures ]---")
@@ -210,10 +272,10 @@ def replace_creatures(obj_defs: list, obj_data: dict):
             continue
         creature_to_def[cd.ID(obj_def["subtype"])] = i
 
-    def replace_basic_list(creatures_list: list, context: rp.ReplacementContext):
+    def replace_basic_list(creatures_list: list, context: crp.ReplacementContext):
         for guard in creatures_list:
             creature_id = guard["id"]
-            replacement = rp.random_replacement_for(creature_id, context)
+            replacement = crp.random_replacement_for(creature_id, context)
             if replacement is None:
                 continue
 
@@ -228,7 +290,7 @@ def replace_creatures(obj_defs: list, obj_data: dict):
         match obj["type"]:
             case od.ID.Monster:
                 creature_id = obj["subtype"]
-                replacement = rp.random_replacement_for(creature_id, rp.ReplacementContext.ENEMY)
+                replacement = crp.random_replacement_for(creature_id, crp.ReplacementContext.ENEMY)
                 if replacement is None:
                     continue
                 print(f"> replacing {cd.ID(creature_id).name}")
@@ -243,22 +305,22 @@ def replace_creatures(obj_defs: list, obj_data: dict):
                     old_quantity = obj["quantity"]
                     obj["quantity"] = math.ceil(old_quantity * replacement.multiplier)
                     print(f"\t- changing quantity from {old_quantity} to {obj['quantity']}")
-            case random_monster if rp.CreatureLevel.from_object_id(random_monster) is not None:
-                level = rp.CreatureLevel.from_object_id(random_monster)
-                creature_id = choice(rp.allowed_creatures_per_level[level])
+            case random_monster if crp.CreatureLevel.from_object_id(random_monster) is not None:
+                level = crp.CreatureLevel.from_object_id(random_monster)
+                creature_id = choice(crp.allowed_creatures_per_level[level])
                 obj["type"] = od.ID.Monster.value
                 obj["subtype"] = creature_id.value
                 if creature_id not in creature_to_def:
                     obj_defs.append(def_per_creature[creature_id])
                     creature_to_def[creature_id] = len(obj_defs) - 1
                 obj["def_id"] = creature_to_def[creature_id]
-                print(f"> replacing random monster of {rp.CreatureLevel(level).name} with {cd.ID(creature_id).name}")
+                print(f"> replacing random monster of {crp.CreatureLevel(level).name} with {cd.ID(creature_id).name}")
             case _:
                 if "guards" in obj:
-                    replace_basic_list(obj["guards"], rp.ReplacementContext.ENEMY)
+                    replace_basic_list(obj["guards"], crp.ReplacementContext.ENEMY)
                 if "garrison_guards" in obj:
-                    replace_basic_list(obj["garrison_guards"], rp.ReplacementContext.FRIEND)
+                    replace_basic_list(obj["garrison_guards"], crp.ReplacementContext.FRIEND)
                 if "hero_data" in obj:
-                    replace_basic_list(obj["hero_data"]["creatures"], rp.ReplacementContext.FRIEND)
+                    replace_basic_list(obj["hero_data"]["creatures"], crp.ReplacementContext.FRIEND)
                 if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
-                    replace_basic_list(obj["contents"]["Creatures"], rp.ReplacementContext.FRIEND)
+                    replace_basic_list(obj["contents"]["Creatures"], crp.ReplacementContext.FRIEND)

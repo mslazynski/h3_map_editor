@@ -2,7 +2,6 @@ import os
 import random
 from enum import Enum, auto
 from dataclasses import dataclass
-
 from data.creatures import ID as CreatureID, CreatureLevel, creatures_per_level
 
 
