@@ -3,6 +3,7 @@ import random
 from enum import Enum, auto
 from dataclasses import dataclass
 from data.creatures import ID as CreatureID, CreatureLevel, creatures_per_level
+from data.objects import Dwelling
 
 
 class ReplacementContext(Enum):
@@ -15,6 +16,19 @@ class Replacement:
     id: CreatureID
     multiplier: float = 1.0
 
+
+creature_cute_dwellings: set[Dwelling] = {
+    Dwelling.Pegasus,
+    Dwelling.Unicorn,
+    Dwelling.Green_Dragon,
+    Dwelling.Faerie_Dragon,
+    Dwelling.Rust_Dragon,
+    Dwelling.Azure_Dragon,
+    Dwelling.Red_Dragon,
+    Dwelling.Couatl,
+    Dwelling.Armadillo,
+    Dwelling.Hydra
+}
 
 creature_replace_always: dict[CreatureID, tuple[Replacement, ...]] = {
     CreatureID.Pegasus: (

@@ -9,6 +9,7 @@ import data.creatures as cd # Creature details
 import data.objects   as od # Object details
 import data.creature_replacements as crp
 import data.town_replacements as trp
+from src.handler_08_objects import Quest, Reward
 
 class BytesEncoder(json.JSONEncoder):
     def default(self, o):
@@ -213,7 +214,7 @@ def derandomize_towns(obj_defs: list, obj_data: dict):
 
     for obj in obj_data:
         match obj["type"]:
-            case od.ID.Random_Town if obj["owner"] == 255:
+            case od.ID.Random_Town if obj["owner"] == 255 and obj["alignment"] == 255:
                 new_town_id = choice(trp.allowed_towns)
                 obj["type"] = od.ID.Town.value
                 obj["subtype"] = new_town_id.value
@@ -260,6 +261,43 @@ def replace_town(obj_defs: list, obj_data: dict, old_town: td.ID, new_town: td.I
                     town_to_def[new_town] = len(obj_defs) - 1
                 obj["def_id"] = town_to_def[new_town]
                 print(f"> replacing rampart with {td.ID(new_town).name}")
+
+
+def warnings(obj_defs: list, obj_data: dict):
+    def cute_creatures_in_list(creatures):
+        return [creature["id"].name for creature in creatures 
+                if crp.random_replacement_for(creature["id"], crp.ReplacementContext.ENEMY) is not None]
+    
+    def quest_required_cute_creatures(quest):
+        if quest["type"] == Quest.RETURN_WITH_CREATURES:
+            return cute_creatures_in_list(quest["value"])
+        return []
+    
+    def check_quest(quest):
+        if creatures := quest_required_cute_creatures(quest):
+            print(f"{obj['coords']} - quest requires cute creatures: {','.join(creatures)}")
+        if quest["type"] == Quest.DEFEAT_SPECIFIC_MONSTER:
+            print(f"{obj['coords']} - quest requires defeating a monster")
+
+    for obj in obj_data:
+        match obj["type"]:
+            case od.ID.Seers_Hut:
+                for [quest, reward] in obj["one_time_quests"] + obj["repeatable_quests"]:
+                    check_quest(quest)
+                    if reward["type"] == Reward.CREATURES:
+                        if creatures := cute_creatures_in_list(reward["value"]):
+                            print(f"{obj['coords']} - quest rewards with cute creatures: {','.join(creatures)}")
+            case _ if "quest" in obj:
+                check_quest(quest)
+            case _ if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
+                if creatures := cute_creatures_in_list(obj["contents"]["Creatures"]):
+                    print(f"{obj['coords']} - rewards with cute creatures: {','.join(creatures)}")
+        
+    for obj in obj_data:
+        match obj["type"]:
+            case od.ID.Creature_Generator_1 if obj["subtype"] in crp.creature_cute_dwellings:
+                print(f"{obj['coords']} - {obj['subtype'].name} can be recruited here")
+
 
 def replace_creatures(obj_defs: list, obj_data: dict):
     print("\n---[ Replacing creatures ]---")
@@ -322,5 +360,3 @@ def replace_creatures(obj_defs: list, obj_data: dict):
                     replace_basic_list(obj["garrison_guards"], crp.ReplacementContext.FRIEND)
                 if "hero_data" in obj:
                     replace_basic_list(obj["hero_data"]["creatures"], crp.ReplacementContext.FRIEND)
-                if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
-                    replace_basic_list(obj["contents"]["Creatures"], crp.ReplacementContext.FRIEND)

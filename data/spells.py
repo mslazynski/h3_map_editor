@@ -4,6 +4,8 @@ from enum import IntEnum
 
 class ID(IntEnum):
     Random_1_Byte  = 255
+    Random_2 = 1605711520
+    Random_3 = 1600599424
     Random_4_Bytes = 4294967295
 #
 # Byte 1 ... (0-7)

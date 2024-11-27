@@ -528,6 +528,7 @@ class Town(IntEnum): # ID 98 & 218
     Conflux    =  8
     Cove       =  9
     Factory    = 10
+    Random     = 255
 
 class War_Machine_Factory(IntEnum): # ID 106
     Normal = 0

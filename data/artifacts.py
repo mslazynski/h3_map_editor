@@ -5,7 +5,34 @@ from enum import IntEnum
 class ID(IntEnum):
     Empty_1_Byte  = 255
     Empty_2_Bytes = 65535
-    Empty_Unknown = 2637180971
+    Empty_Unknown_0 = 6553600
+    Empty_Unknown_1 = 6553708
+    Empty_Unknown_15 = 6553714
+    Empty_Unknown_2 = 6619237
+    Empty_Unknown_3 = 6750305
+    Empty_Unknown_4 = 7077989
+    Empty_Unknown_5 = 7077996
+    Empty_Unknown_6 = 7209079
+    Empty_Unknown_7 = 7471215
+    Empty_Unknown_21 = 77836812
+    Empty_Unknown_8 = 2637168640
+    Empty_Unknown_9 = 2637180971
+    Empty_Unknown_10 = 275331818
+    Empty_Unknown_11 = 3019320901
+    Empty_Unknown_22 = 3909380097
+    Empty_Unknown_23 = 3912788077
+    Empty_Unknown_24 = 3913312325
+    Empty_Unknown_27 = 4294967279
+    Empty_Unknown_26 = 4294967280
+    Empty_Unknown_25 = 4294967281
+    Empty_Unknown_17 = 4294967282
+    Empty_Unknown_12 = 4294967283
+    Empty_Unknown_19 = 4294967286
+    Empty_Unknown_13 = 4294967287
+    Empty_Unknown_20 = 4294967291
+    Empty_Unknown_14 = 4294967292
+    Empty_Unknown_18 = 4294967293
+    Empty_Unknown_16 = 4294967294
     Empty_4_Bytes = 4294967295
 #
 # Byte 1 ... (0-7)

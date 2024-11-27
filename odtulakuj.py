@@ -2,6 +2,7 @@
 import sys
 from sys  import argv
 from gzip import open
+import traceback
 
 import src.file_io as io
 import src.scripts as scripts
@@ -15,6 +16,8 @@ import src.handler_06_rumors_and_events  as h6
 import src.handler_07_terrain            as h7
 import src.handler_08_objects            as h8
 from data.towns import ID as TownID
+
+rampart_replacement = None 
 
 map_data = {
     "general"     : {}, # General tab in Map Specifications
@@ -91,7 +94,6 @@ h3m_extension = ".h3m"
 
 def open_map(filename: str) -> None:
     global map_data
-
     # Make sure that the filename ends with ".h3m". For convenience,
     # users should be able to open maps without typing the extension.
     if filename[-4:] != h3m_extension:
@@ -161,6 +163,29 @@ def save_map(filename: str = "output.h3m") -> None:
 
     print("DONE")
 
+def odtulakuj(map_data, open_map, input_name):
+    global rampart_replacement
+    open_map(input_name)
+    scripts.replace_creatures(map_data["object_defs"], map_data["object_data"])
+    scripts.derandomize_towns(map_data["object_defs"], map_data["object_data"])
+
+    if scripts.is_there_town(map_data["object_data"], TownID.rampart):
+        if rampart_replacement is None:
+            print("\n--[ Oh No! There is a rampart town in this map! --]")
+            rampart_replacement = input("What should replace rampart towns?\n"
+                        "> possible replacements: castle tower inferno necropolis dungeon stronghold fortress conflux cove factory\n"
+                        "> write 'rampart' or just nothing if you don't want to replace it\n"
+                        "> write 'random' if you want every rampart town to be idenpendently replaced with a random town\n"
+                        "> confirm choice with `Enter`:\n"
+                        "> ").strip().lower()
+                    
+        if len(rampart_replacement) == 0 or rampart_replacement == "rampart":
+            print("- as you wish, rampart has been left untouched")
+        else:
+            new_town = TownID[rampart_replacement] if rampart_replacement != "random" else TownID.NONE 
+            scripts.replace_town(map_data["object_defs"], map_data["object_data"], TownID.rampart, new_town)
+    scripts.warnings(map_data["object_defs"], map_data["object_data"])
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         try:
@@ -176,30 +201,15 @@ if __name__ == "__main__":
             else:
                 input_name += h3m_extension
                 output_name += h3m_extension
-
-            open_map(input_name)
-            scripts.replace_creatures(map_data["object_defs"], map_data["object_data"])
-            scripts.derandomize_towns(map_data["object_defs"], map_data["object_data"])
-
-            if scripts.is_there_town(map_data["object_data"], TownID.rampart):
-                print("\n--[ Oh No! There is a rampart town in this map! --]")
-                replacement = input("What should replace rampart towns?\n"
-                    "> possible replacements: castle tower inferno necropolis dungeon stronghold fortress conflux cove factory\n"
-                    "> write 'rampart' or just nothing if you don't want to replace it\n"
-                    "> write 'random' if you want every rampart town to be idenpendently replaced with a random town\n"
-                    "> confirm choice with `Enter`:\n"
-                    "> ").strip().lower()
-                
-                if len(replacement) == 0 or replacement == "rampart":
-                    print("- as you wish, rampart has been left untouched")
-                else:
-                    new_town = TownID[replacement] if replacement != "random" else TownID.NONE 
-                    scripts.replace_town(map_data["object_defs"], map_data["object_data"], TownID.rampart, new_town)
+            done = False
+            while not done:
+                odtulakuj(map_data, open_map, input_name)
+                save_map(output_name)
+                result = input(f"This map is a happy place now :)")
+                done = result.strip().lower() != "r"
         except Exception as e:
             input(f"Odtulakowanie failed: {e}")
+            traceback.print_exc()
             sys.exit(1)
-
-        save_map(output_name)
-        input(f"This map is a happy place now :)")
     else:
         main()
