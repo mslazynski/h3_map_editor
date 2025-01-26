@@ -288,7 +288,7 @@ def warnings(obj_defs: list, obj_data: dict):
                         if creatures := cute_creatures_in_list(reward["value"]):
                             print(f"{obj['coords']} - quest rewards with cute creatures: {','.join(creatures)}")
             case _ if "quest" in obj:
-                check_quest(quest)
+                check_quest(obj["quest"])
             case _ if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
                 if creatures := cute_creatures_in_list(obj["contents"]["Creatures"]):
                     print(f"{obj['coords']} - rewards with cute creatures: {','.join(creatures)}")

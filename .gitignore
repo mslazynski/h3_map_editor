@@ -131,3 +131,5 @@ dmypy.json
 # Custom
 *.h3m
 !data/creatures.h3m
+nuitka
+**/.DS_Store

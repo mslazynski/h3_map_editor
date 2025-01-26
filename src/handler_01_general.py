@@ -69,7 +69,7 @@ def parse_general() -> dict:
     if info["map_format"] == MapFormat.HotA:
         info["hota_version"] = io.read_int(4)
 
-        if info["hota_version"] == 6:
+        if info["hota_version"] == 7:
             info["hota_data_1"]        =      io.read_raw(1)
             info["is_arena"]           = bool(io.read_int(1))
             info["hota_data_2"]        =      io.read_raw(8)
@@ -79,6 +79,7 @@ def parse_general() -> dict:
     else: raise NotImplementedError(f"unsupported map format: {info['map_format']}")
 
     info["has_hero"]     =       bool(io.read_int(1))
+    info["?"]     =       bool(io.read_int(1))
     info["map_size"]     =    MapSize(io.read_int(4))
     info["is_two_level"] =       bool(io.read_int(1))
     info["name"]         =            io.read_str(io.read_int(4))
@@ -99,6 +100,7 @@ def write_general(info: dict) -> None:
         io.write_bits(info["allowed_difficulty"])
 
     io.write_int(    info["has_hero"], 1)
+    io.write_int(    info["?"], 1)
     io.write_int(    info["map_size"], 4)
     io.write_int(    info["is_two_level"], 1)
     io.write_int(len(info["name"]), 4)

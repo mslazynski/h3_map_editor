@@ -314,3 +314,5 @@ class ID(IntEnum):
     Murdoch   = 197
     # UNUSED
     # UNUSED
+    Lizard = 204
+    Skeleton = 205 
