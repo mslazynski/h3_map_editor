@@ -315,4 +315,5 @@ class ID(IntEnum):
     # UNUSED
     # UNUSED
     Lizard = 204
-    Skeleton = 205 
+    Skeleton = 205
+    Deamon = 216

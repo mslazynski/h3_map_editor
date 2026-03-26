@@ -172,9 +172,6 @@ def generate_guards(obj_data: dict) -> dict:
             for k, v in total_guards.items():
                 guard_list.append(get_creature_text(k, v))
 
-            if len(guard_list) == 1:
-                print(obj["coords"])
-
             guard_text = "Guarded by "
             last_guard = " and " + guard_list.pop()
             guard_text += ", ".join(guard_list) + last_guard
@@ -324,11 +321,13 @@ def replace_creatures(obj_defs: list, obj_data: dict):
             guard["amount"] = math.ceil(old_quantity * replacement.multiplier)
             print(f"\t- changing quantity from {old_quantity} to {guard['amount']}")
 
+ 
     for obj in obj_data:
         match obj["type"]:
             case od.ID.Monster:
                 creature_id = obj["subtype"]
                 replacement = crp.random_replacement_for(creature_id, crp.ReplacementContext.ENEMY)
+                print(f"> found {cd.ID(creature_id).name}")
                 if replacement is None:
                     continue
                 print(f"> replacing {cd.ID(creature_id).name}")
@@ -353,7 +352,18 @@ def replace_creatures(obj_defs: list, obj_data: dict):
                     creature_to_def[creature_id] = len(obj_defs) - 1
                 obj["def_id"] = creature_to_def[creature_id]
                 print(f"> replacing random monster of {crp.CreatureLevel(level).name} with {cd.ID(creature_id).name}")
+            case od.ID.Seers_Hut:
+                for [quest, reward] in obj["one_time_quests"] + obj["repeatable_quests"]:
+                    if quest["type"] == Quest.RETURN_WITH_CREATURES:
+                        replace_basic_list(quest["value"], crp.ReplacementContext.FRIEND)
+                    if reward["type"] == Reward.CREATURES:
+                        replace_basic_list(reward["value"], crp.ReplacementContext.FRIEND)
             case _:
+                if "quest" in obj and obj["quest"]["type"] == Quest.RETURN_WITH_CREATURES:
+                    print(f"quest! {obj}")
+                    replace_basic_list(obj["quest"]["value"], crp.ReplacementContext.FRIEND)
+                if "contents" in obj and isinstance(obj["contents"], dict) and "Creatures" in obj["contents"]:
+                    replace_basic_list(obj["contents"]["Creatures"], crp.ReplacementContext.FRIEND)
                 if "guards" in obj:
                     replace_basic_list(obj["guards"], crp.ReplacementContext.ENEMY)
                 if "garrison_guards" in obj:

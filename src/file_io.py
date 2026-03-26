@@ -4,18 +4,22 @@ in_file  = None
 out_file = None
 
 def read_raw(length: int) -> bytes:
+    # print(f"read_raw({length})")
     global in_file
     return in_file.read(length)
 
 def read_int(length: int) -> int:
+    # print(f"read_int({length})")
     global in_file
     return int.from_bytes(in_file.read(length), 'little')
 
 def read_str(length: int) -> str:
+    # print(f"read_str({length})")
     global in_file
     return in_file.read(length).decode('latin-1')
 
 def read_bits(length: int) -> list:
+    # print(f"read_bits({length})")
     temp_bits = []
     raw_data  = read_raw(length)
 
